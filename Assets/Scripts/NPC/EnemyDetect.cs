@@ -1,9 +1,7 @@
-using System;
 using UnityEngine;
 
 public class EnemyDetect : MonoBehaviour
 {
-    public event EventHandler TargetFound;
     private GridPosition nPCGridPosition;
     private GridPosition targetGridPosition;
 
@@ -11,6 +9,7 @@ public class EnemyDetect : MonoBehaviour
     private bool hasTarget;
 
     private NPC thisNPC;
+    [SerializeField] Unit target;
 
     private void Start()
     {
@@ -20,6 +19,8 @@ public class EnemyDetect : MonoBehaviour
 
     private void Update()
     {
+        if (hasTarget) return;
+
         nPCGridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
 
         targetGridPosition = LevelGrid.Instance.GetPlayerGridPosition();
@@ -32,8 +33,22 @@ public class EnemyDetect : MonoBehaviour
 
         if (!hasTarget)
         {
-            TargetFound?.Invoke(this, EventArgs.Empty);
             hasTarget = true;
         }
+    }
+
+    public bool CheckIfHasTarget()
+    {
+        return hasTarget;
+    }
+
+    public void SetTarget(Unit target)
+    {
+        this.target = target;
+    }
+
+    public Unit GetTarget()
+    {
+        return target;
     }
 }

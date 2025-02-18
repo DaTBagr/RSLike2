@@ -85,6 +85,11 @@ public class LevelGrid : MonoBehaviour
         return playerGridPosition;
     }
 
+    public Vector3 GetPlayerWorldPosition()
+    {
+        return GetWorldPosition(playerGridPosition);
+    }
+
     private void CreateDebugObjects()
     {
         GridObject[,] gridArray = gridSystem.GetGridObjectArray();

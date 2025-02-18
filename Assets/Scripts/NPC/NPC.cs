@@ -1,84 +1,39 @@
-using UnityEngine;
-
-public class NPC : MonoBehaviour
+public class NPC : Unit
 {
-    private bool hostile;
-    private int moveSpeed;
-    private int attackRange;
-    private int detectionRange;
+    public bool hostile;
+    public int detectionRange;
+    public int moveSpeed;
+    public int attackDamage;
+    public float attackCooldown;
+    public int attackRange;
+    public bool attackReady;
 
-    private HealthSystem healthSystem;
+    public Unit target;
 
-    private GridPosition gridPosition;
-
-    private void Awake()
+    public override void Awake()
     {
-        healthSystem = new HealthSystem();
+        base.Awake();
     }
 
     public virtual void Start()
     {
-        gridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
-        LevelGrid.Instance.SetNPCAtGridObject(this, gridPosition);
+        LevelGrid.Instance.SetNPCAtGridObject(this, GetGridPosition());
+
+        if (hostile)
+        {
+            target = GameManager.instance.GetPlayer();
+        }
     }
 
-    public void SetSpeed(int speed)
-    {
-        moveSpeed = speed;
-    }
+    public int GetSpeed() { return moveSpeed; }
 
-    public int GetSpeed()
-    {
-        return moveSpeed;
-    }
+    public int GetAttackDamage() { return attackDamage; }
 
-    public void SetAttackRange(int range)
-    {
-        attackRange = range;
-    }
+    public float GetAttackCoolDown() { return attackCooldown; }
 
-    public int GetAttackRange()
-    {
-        return attackRange;
-    }
+    public int GetAttackRange() { return attackRange; }
 
-    public void SetDetectionRange(int range)
-    {
-        detectionRange = range;
-    }
+    public int GetDetectionRange() { return detectionRange; }
 
-    public int GetDetectionRange()
-    {
-        return detectionRange;
-    }
-
-    public void SetHealth(int health)
-    {
-        healthSystem.SetMaxHealth(health);
-    }
-
-    public void TakeDamage(int damage)
-    {
-        healthSystem.TakeDamage(damage);
-    }
-
-    public void Heal(int health)
-    {
-        healthSystem.Heal(health);
-    }
-
-    public void SetHostile(bool hostile)
-    {
-        this.hostile = hostile;
-    }
-
-    public bool GetHostile()
-    {
-        return hostile;
-    }
-
-    public GridPosition GetGridPosition()
-    {
-        return gridPosition;
-    }
+    public bool GetHostile() { return hostile; }
 }

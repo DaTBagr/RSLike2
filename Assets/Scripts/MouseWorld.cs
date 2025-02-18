@@ -7,8 +7,9 @@ public class MouseWorld : MonoBehaviour
 
     public event EventHandler<OnTargetNPCChangedEventArgs> OnTargetNPCChanged;
 
-    public class OnTargetNPCChangedEventArgs : EventArgs { 
-        public NPC targetNPC; 
+    public class OnTargetNPCChangedEventArgs : EventArgs
+    {
+        public NPC targetNPC;
         public OnTargetNPCChangedEventArgs(NPC targetNPC)
         {
             this.targetNPC = targetNPC;
@@ -46,7 +47,7 @@ public class MouseWorld : MonoBehaviour
                 }
             }
         }
-        
+
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out RaycastHit groundHit, float.MaxValue, groundLayer))
         {
             mousePos = groundHit.point;

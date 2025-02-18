@@ -22,4 +22,9 @@ public class HealthSystem
 
         if (health > maxHealth) health = maxHealth;
     }
+
+    public int GetHealth()
+    {
+        return health;
+    }
 }

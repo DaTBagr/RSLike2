@@ -28,7 +28,7 @@ public class TimeTickSystem : MonoBehaviour
         {
             tickTimer -= TICK_TIMER_MAX;
             tick++;
-            OnTick?.Invoke(this, new OnTickEventArgs{tick = tick});
+            OnTick?.Invoke(this, new OnTickEventArgs { tick = tick });
         }
 
         if (tick == uint.MaxValue - 1)

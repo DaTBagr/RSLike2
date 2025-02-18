@@ -1,67 +1,72 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class NPCMovement : MonoBehaviour
 {
     public const float ROTATION_SPEED = 10;
     public const float STOPPING_DISTANCE = 0.1f;
 
-    private NPC thisNPC;
-    private SkeletonAnimations sAnimation;
-
     private float moveSpeed;
     private int attackRange;
 
-    private GridPosition targetGridPosition;
-    private int currentIndex;
-    private List<Vector3> path;
-    private List<GridPosition> gridPositions;
+    public bool readyToAttack = false;
+    public Unit target;
 
-    private EnemyDetect detect;
-    private bool targetFound;
+    private NPC thisNPC;
+
+    private Animations sAnimation;
+    private FindTilePath tilePath = new FindTilePath();
+
+    private int currentIndex;
+    private GridPosition targetGridPosition;
+
+    public List<Vector3> path;
+    public List<GridPosition> gridPositions;
 
     private void Start()
     {
         thisNPC = GetComponent<NPC>();
-        sAnimation = GetComponent<SkeletonAnimations>();
+
+        sAnimation = GetComponent<Animations>();
 
         moveSpeed = thisNPC.GetSpeed();
         attackRange = thisNPC.GetAttackRange();
 
-        targetGridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
-        transform.position = LevelGrid.Instance.GetWorldPosition(targetGridPosition);
-
-        detect = GetComponent<EnemyDetect>();
-        detect.TargetFound += TargetFound;
+        targetGridPosition = thisNPC.GetGridPosition(transform.position);
+        transform.position = thisNPC.GetWorldPosition(targetGridPosition);
     }
 
     private void Update()
     {
         // Once the targets entered detection range, if it moves the npc will follow it.
-        if (targetFound)
+        if (target != null)
         {
             // If player is under NPC, move one tile away.
-            if (LevelGrid.Instance.GetPlayerGridPosition() == LevelGrid.Instance.GetGridPosition(transform.position))
+            if (LevelGrid.Instance.GetPlayerGridPosition() == thisNPC.GetGridPosition(transform.position))
             {
-                Vector3 moveAwayLocation = LevelGrid.Instance.GetWorldPosition(new GridPosition(targetGridPosition.x - 1, targetGridPosition.z));
-                Vector3 direction = (moveAwayLocation - transform.position).normalized;
+                Vector3 moveAwayLocation = thisNPC.GetWorldPosition(new GridPosition(targetGridPosition.x - 1, targetGridPosition.z));
+                Vector3 moveDirection = (moveAwayLocation - transform.position).normalized;
 
                 if (Vector3.Distance(transform.position, moveAwayLocation) > STOPPING_DISTANCE)
                 {
-                    transform.position += direction * moveSpeed * Time.deltaTime;
+                    transform.position += moveDirection * moveSpeed * Time.deltaTime;
                 }
 
                 LevelGrid.Instance.RemoveNPCFromGridObject(thisNPC, LevelGrid.Instance.GetPlayerGridPosition());
-                LevelGrid.Instance.SetNPCAtGridObject(thisNPC, LevelGrid.Instance.GetGridPosition(moveAwayLocation));
+                LevelGrid.Instance.SetNPCAtGridObject(thisNPC, thisNPC.GetGridPosition(moveAwayLocation));
+
+                return;
             }
 
-            if (LevelGrid.Instance.GetPlayerGridPosition() != targetGridPosition)
+            Vector3 direction = (thisNPC.GetWorldPosition(LevelGrid.Instance.GetPlayerGridPosition()) - transform.position).normalized;
+            transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
+
+            // Check if target is on neighbour tile. If not, follow target by finding new path.
+            if (CheckIfTargetHasMoved())
             {
-                MoveToTarget();
+                readyToAttack = false;
+                path = tilePath.FindTargetTilePath(target, thisNPC).pathList;
+                gridPositions = tilePath.FindTargetTilePath(target, thisNPC).gridPositions;
             }
         }
 
@@ -71,7 +76,9 @@ public class NPCMovement : MonoBehaviour
             Vector3 targetPosition = path[currentIndex];
             Vector3 direction = (targetPosition - transform.position).normalized;
 
-            transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
+            targetGridPosition = thisNPC.GetGridPosition(targetPosition);
+
+            if (target == null) transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
 
             // Moves toward next tile until deemed "close enough"
             if (Vector3.Distance(transform.position, targetPosition) > STOPPING_DISTANCE)
@@ -89,58 +96,28 @@ public class NPCMovement : MonoBehaviour
                 currentIndex++;
             }
         }
+        else if (path.Count == currentIndex + 1 && target != null)
+        {
+            sAnimation.SetMovementAnimation(0);
+            readyToAttack = true;
+        }
         else
             sAnimation.SetMovementAnimation(0);
     }
 
-    private List<Vector3> FindTilePath(GridPosition targetPosition)
+    private bool CheckIfTargetHasMoved()
     {
-        gridPositions = Pathfinding.Instance.FindPath(GetNPCGridPosition(), targetPosition, out int pathLength);
-        List<Vector3> pathList = new List<Vector3>();
+        bool targetHasMoved = false;
+        GridPosition currentGridPos = thisNPC.GetGridPosition(transform.position);
+        GridPosition targetGridPos = target.GetGridPosition();
 
-        foreach (GridPosition gridPosition in gridPositions)
-        {
-            pathList.Add(LevelGrid.Instance.GetWorldPosition(gridPosition));
-        }
+        if (currentGridPos.x + attackRange == targetGridPos.x && currentGridPos.z == targetGridPos.z) return targetHasMoved;
+        if (currentGridPos.x - attackRange == targetGridPos.x && currentGridPos.z == targetGridPos.z) return targetHasMoved;
+        if (currentGridPos.x == targetGridPos.x && currentGridPos.z + attackRange == targetGridPos.z) return targetHasMoved;
+        if (currentGridPos.x == targetGridPos.x && currentGridPos.z - attackRange == targetGridPos.z) return targetHasMoved;
 
-        return pathList;
-    }
+        targetHasMoved = true;
 
-    public GridPosition GetNPCGridPosition()
-    {
-        return LevelGrid.Instance.GetGridPosition(transform.position);
-    }
-
-    public GridObject GetNPCGridObject()
-    {
-        return LevelGrid.Instance.GetGridObject(targetGridPosition);
-    }
-
-    private void MoveToTarget()
-    {
-        targetGridPosition = LevelGrid.Instance.GetPlayerGridPosition();
-        path = FindTilePath(targetGridPosition);
-
-        GridPosition lastGridPos = LevelGrid.Instance.GetGridPosition(path[path.Count - 2]);
-
-        if (lastGridPos.x != targetGridPosition.x && lastGridPos.z != targetGridPosition.z)
-        {
-            GridPosition newLastTile;
-            GridPosition firstTile = LevelGrid.Instance.GetGridPosition(path[0]);
-
-            if (firstTile.x < firstTile.z) newLastTile = new GridPosition(targetGridPosition.x, lastGridPos.z);
-                 else newLastTile = new GridPosition(lastGridPos.x, targetGridPosition.z);
-
-            path.Insert(path.Count - 1, (LevelGrid.Instance.GetWorldPosition(newLastTile)));
-        }
-
-        currentIndex = 0;
-        sAnimation.SetMovementAnimation(1);
-    }
-
-    private void TargetFound(object sender, EventArgs e)
-    {
-        MoveToTarget();
-        targetFound = true;
+        return targetHasMoved;
     }
 }

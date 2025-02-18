@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class SkeletonAnimations : MonoBehaviour
+public class Animations : MonoBehaviour
 {
     private Animator animator;
 
@@ -12,5 +12,15 @@ public class SkeletonAnimations : MonoBehaviour
     public void SetMovementAnimation(float speed)
     {
         animator.SetFloat("speed", speed);
+    }
+
+    public void Attack()
+    {
+        animator.SetTrigger("attack");
+    }
+
+    public void ResetAttack()
+    {
+        animator.ResetTrigger("attack");
     }
 }

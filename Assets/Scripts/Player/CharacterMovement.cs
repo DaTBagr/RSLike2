@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using static MouseWorld;
@@ -12,8 +10,10 @@ public class CharacterMovement : MonoBehaviour
     public const float WALKING_SPEED = 3f;
     public const float RUNNING_SPEED = 7f;
 
-    private CharacterInfo cInfo;
+    private CharacterInfo thisChar;
     private CharacterAnimations cAnimations;
+
+    private FindTilePath tilePath = new FindTilePath();
 
     private GridPosition targetGridPosition;
     private Vector3 targetPosition;
@@ -23,9 +23,6 @@ public class CharacterMovement : MonoBehaviour
     private List<Vector3> path;
     private List<GridPosition> gridPositions;
 
-    private uint tick;
-    uint previousTick = 0;
-
     private void Start()
     {
         targetGridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
@@ -33,12 +30,11 @@ public class CharacterMovement : MonoBehaviour
         LevelGrid.Instance.AddPlayerToGridObject(targetGridPosition);
 
         MouseWorld.Instance.OnTargetNPCChanged += MoveToTargetNPC;
-        TimeTickSystem.OnTick += OnNextTick;
 
         cAnimations = GetComponent<CharacterAnimations>();
-        cInfo = GetComponent<CharacterInfo>();
+        thisChar = GetComponent<CharacterInfo>();
 
-        cInfo.SetMoveSpeed(WALKING_SPEED);
+        thisChar.SetMoveSpeed(WALKING_SPEED);
     }
 
     private void Update()
@@ -55,7 +51,11 @@ public class CharacterMovement : MonoBehaviour
             if (LevelGrid.Instance.GetGridPosition(clickedPosition) != null) //Still not working as intended.
             {
                 targetGridPosition = LevelGrid.Instance.GetGridPosition(clickedPosition);
-                path = FindTilePath(targetGridPosition);
+
+                var pathResult = tilePath.FindGroundTilePath(targetGridPosition, thisChar);
+                path = pathResult.pathList;
+                gridPositions = pathResult.gridPositions;
+
                 currentIndex = 0;
                 tileStoppingDistance = 0;
             }
@@ -70,18 +70,18 @@ public class CharacterMovement : MonoBehaviour
 
             transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
 
-            if (cInfo.GetIsRunning())
+            if (thisChar.GetIsRunning())
             {
-                cInfo.SetMoveSpeed(RUNNING_SPEED);
+                thisChar.SetMoveSpeed(RUNNING_SPEED);
             }
-            else cInfo.SetMoveSpeed(WALKING_SPEED);
+            else thisChar.SetMoveSpeed(WALKING_SPEED);
 
-            cAnimations.SetMovementAnimation(cInfo.GetMoveSpeed());
+            cAnimations.SetMovementAnimation(thisChar.GetMoveSpeed());
 
             // Moves toward next tile until deemed "close enough"
             if (Vector3.Distance(transform.position, targetPosition) > STOPPING_DISTANCE)
             {
-                transform.position += direction * cInfo.GetMoveSpeed() * Time.deltaTime;
+                transform.position += direction * thisChar.GetMoveSpeed() * Time.deltaTime;
             }
             else // Once close enough incremement index. 
             {
@@ -96,22 +96,9 @@ public class CharacterMovement : MonoBehaviour
         }
         else // Once at final index set speed to 0, setting idle animation.
         {
-            cInfo.SetMoveSpeed(0);
-            cAnimations.SetMovementAnimation(cInfo.GetMoveSpeed());
+            thisChar.SetMoveSpeed(0);
+            cAnimations.SetMovementAnimation(thisChar.GetMoveSpeed());
         }
-    }
-
-    private List<Vector3> FindTilePath(GridPosition targetPosition)
-    {
-        gridPositions = Pathfinding.Instance.FindPath(GetPlayerGridPosition(), targetPosition, out int pathLength);
-        List<Vector3> pathList = new List<Vector3>();
-
-        foreach (GridPosition gridPosition in gridPositions)
-        {
-            pathList.Add(LevelGrid.Instance.GetWorldPosition(gridPosition));
-        }
-
-        return pathList;
     }
 
     public GridPosition GetPlayerGridPosition()
@@ -128,27 +115,10 @@ public class CharacterMovement : MonoBehaviour
     {
         NPC targetNPC = npc.targetNPC;
         tileStoppingDistance = 1;
-        targetGridPosition = targetNPC.GetGridPosition();
-        
-        path = FindTilePath(targetGridPosition);
 
-        GridPosition lastGridPos = LevelGrid.Instance.GetGridPosition(path[path.Count - 2]);
-
-        if (lastGridPos.x != targetGridPosition.x && lastGridPos.z != targetGridPosition.z)
-        {
-            GridPosition newLastTile;
-            GridPosition firstTile = LevelGrid.Instance.GetGridPosition(path[0]);
-
-            if (firstTile.x < firstTile.z) newLastTile = new GridPosition(targetGridPosition.x, lastGridPos.z);
-            else newLastTile = new GridPosition(lastGridPos.x, targetGridPosition.z);
-
-            path.Insert(path.Count - 1, (LevelGrid.Instance.GetWorldPosition(newLastTile)));
-        }
+        path = tilePath.FindTargetTilePath(targetNPC, thisChar).pathList;
+        gridPositions = tilePath.FindTargetTilePath(targetNPC, thisChar).gridPositions;
 
         currentIndex = 0;
-    }
-    private void OnNextTick(object sender, TimeTickSystem.OnTickEventArgs e)
-    {
-        tick++;
     }
 }

@@ -1,21 +1,26 @@
 using System;
 using UnityEngine;
-using static MouseWorld;
 
-public class CharacterInfo : MonoBehaviour
+public class CharacterInfo : Unit
 {
-    private HealthSystem healthSystem;
+    private HealthBar healthBar;
 
     [SerializeField] private bool isRunning;
     private float moveSpeed;
-    private int health = 250;
+    private int maxHealth = 250;
 
     private NPC enemyTarget;
 
-    private void Start()
+    public override void Awake()
     {
-        healthSystem = new HealthSystem();
-        healthSystem.SetMaxHealth(health);
+        base.Awake();
+        name = "Player";
+    }
+
+    public void Start()
+    {
+        SetHealth(maxHealth);
+        healthBar = HealthBar.instance;
 
         CanvasButtonController.Instance.OnRunButtonClicked += ToggleRun;
     }
@@ -43,5 +48,13 @@ public class CharacterInfo : MonoBehaviour
     public NPC GetCurrentEnemy()
     {
         return enemyTarget;
+    }
+
+    public override void TakeDamage(int damage)
+    {
+        base.TakeDamage(damage);
+
+        int currentHealth = GetHealth();
+        healthBar.ChangeHealth(currentHealth, maxHealth);
     }
 }
