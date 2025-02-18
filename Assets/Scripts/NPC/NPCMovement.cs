@@ -67,6 +67,7 @@ public class NPCMovement : MonoBehaviour
                 readyToAttack = false;
                 path = tilePath.FindTargetTilePath(target, thisNPC).pathList;
                 gridPositions = tilePath.FindTargetTilePath(target, thisNPC).gridPositions;
+                return;
             }
         }
 
@@ -84,6 +85,7 @@ public class NPCMovement : MonoBehaviour
             if (Vector3.Distance(transform.position, targetPosition) > STOPPING_DISTANCE)
             {
                 transform.position += direction * moveSpeed * Time.deltaTime;
+                sAnimation.SetMovementAnimation(1);
             }
             else // Once close enough incremement index. 
             {
@@ -96,28 +98,25 @@ public class NPCMovement : MonoBehaviour
                 currentIndex++;
             }
         }
-        else if (path.Count == currentIndex + 1 && target != null)
+        else if (path.Count == currentIndex + attackRange && target != null)
         {
             sAnimation.SetMovementAnimation(0);
             readyToAttack = true;
-        }
+        } 
         else
             sAnimation.SetMovementAnimation(0);
     }
 
     private bool CheckIfTargetHasMoved()
     {
-        bool targetHasMoved = false;
-        GridPosition currentGridPos = thisNPC.GetGridPosition(transform.position);
+        GridPosition finalGridPos = gridPositions[gridPositions.Count - 1]; 
         GridPosition targetGridPos = target.GetGridPosition();
 
-        if (currentGridPos.x + attackRange == targetGridPos.x && currentGridPos.z == targetGridPos.z) return targetHasMoved;
-        if (currentGridPos.x - attackRange == targetGridPos.x && currentGridPos.z == targetGridPos.z) return targetHasMoved;
-        if (currentGridPos.x == targetGridPos.x && currentGridPos.z + attackRange == targetGridPos.z) return targetHasMoved;
-        if (currentGridPos.x == targetGridPos.x && currentGridPos.z - attackRange == targetGridPos.z) return targetHasMoved;
+        if (finalGridPos.x + attackRange == targetGridPos.x && finalGridPos.z == targetGridPos.z) return false;
+        if (finalGridPos.x - attackRange == targetGridPos.x && finalGridPos.z == targetGridPos.z) return false;
+        if (finalGridPos.x == targetGridPos.x && finalGridPos.z + attackRange == targetGridPos.z) return false;
+        if (finalGridPos.x == targetGridPos.x && finalGridPos.z - attackRange == targetGridPos.z) return false;
 
-        targetHasMoved = true;
-
-        return targetHasMoved;
+        return true;
     }
 }
