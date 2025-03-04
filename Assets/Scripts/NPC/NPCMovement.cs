@@ -8,25 +8,21 @@ public class NPCMovement : MonoBehaviour
 
     private float moveSpeed;
     private int attackRange;
-
     public bool readyToAttack = false;
+
     public Unit target;
-
     private NPC thisNPC;
-
     private Animations sAnimation;
-    private FindTilePath tilePath = new FindTilePath();
 
     private int currentIndex;
-    private GridPosition targetGridPosition;
 
+    private GridPosition targetGridPosition;
     public List<Vector3> path;
     public List<GridPosition> gridPositions;
 
     private void Start()
     {
         thisNPC = GetComponent<NPC>();
-
         sAnimation = GetComponent<Animations>();
 
         moveSpeed = thisNPC.GetSpeed();
@@ -38,7 +34,6 @@ public class NPCMovement : MonoBehaviour
 
     private void Update()
     {
-        // Once the targets entered detection range, if it moves the npc will follow it.
         if (target != null)
         {
             // If player is under NPC, move one tile away.
@@ -60,15 +55,6 @@ public class NPCMovement : MonoBehaviour
 
             Vector3 direction = (thisNPC.GetWorldPosition(LevelGrid.Instance.GetPlayerGridPosition()) - transform.position).normalized;
             transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
-
-            // Check if target is on neighbour tile. If not, follow target by finding new path.
-            if (CheckIfTargetHasMoved())
-            {
-                readyToAttack = false;
-                path = tilePath.FindTargetTilePath(target, thisNPC).pathList;
-                gridPositions = tilePath.FindTargetTilePath(target, thisNPC).gridPositions;
-                return;
-            }
         }
 
         // If a path exists, move to each location
@@ -100,23 +86,19 @@ public class NPCMovement : MonoBehaviour
         }
         else if (path.Count == currentIndex + attackRange && target != null)
         {
+            // Check if target is on neighbour tile. If not, follow target by finding new path.
+            if (!Pathfinding.Instance.CheckIfNeighbour(target.GetGridPosition(), thisNPC.GetGridPosition()))
+            {
+                readyToAttack = false;
+                (path, gridPositions) = Pathfinding.Instance.FindTargetTilePath(target, thisNPC);
+                currentIndex = 0;
+                return;
+            }
+
             sAnimation.SetMovementAnimation(0);
             readyToAttack = true;
         } 
         else
             sAnimation.SetMovementAnimation(0);
-    }
-
-    private bool CheckIfTargetHasMoved()
-    {
-        GridPosition finalGridPos = gridPositions[gridPositions.Count - 1]; 
-        GridPosition targetGridPos = target.GetGridPosition();
-
-        if (finalGridPos.x + attackRange == targetGridPos.x && finalGridPos.z == targetGridPos.z) return false;
-        if (finalGridPos.x - attackRange == targetGridPos.x && finalGridPos.z == targetGridPos.z) return false;
-        if (finalGridPos.x == targetGridPos.x && finalGridPos.z + attackRange == targetGridPos.z) return false;
-        if (finalGridPos.x == targetGridPos.x && finalGridPos.z - attackRange == targetGridPos.z) return false;
-
-        return true;
     }
 }

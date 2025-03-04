@@ -6,9 +6,12 @@ public class Unit : MonoBehaviour
 
     private HealthSystem healthSystem;
 
+    public GridPosition finalGridPosition;
+
     public virtual void Awake()
     {
         healthSystem = new HealthSystem();
+        finalGridPosition = GetGridPosition(transform.position);
     }
 
     public virtual void TakeDamage(int damage) => healthSystem.TakeDamage(damage);

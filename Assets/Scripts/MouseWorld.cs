@@ -1,25 +1,27 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class MouseWorld : MonoBehaviour
 {
     public static MouseWorld Instance { get; private set; }
 
-    public event EventHandler<OnTargetNPCChangedEventArgs> OnTargetNPCChanged;
+    public event EventHandler<OnTargetChangedEventArgs> OnTargetChanged;
+    public event EventHandler OnTargetRemoved;
 
-    public class OnTargetNPCChangedEventArgs : EventArgs
+    public class OnTargetChangedEventArgs : EventArgs
     {
-        public NPC targetNPC;
-        public OnTargetNPCChangedEventArgs(NPC targetNPC)
+        public Unit targetUnit;
+        public OnTargetChangedEventArgs(Unit targetUnit)
         {
-            this.targetNPC = targetNPC;
+            this.targetUnit = targetUnit;
         }
     }
 
     [SerializeField] LayerMask npc;
     [SerializeField] LayerMask groundLayer;
 
-    private Vector3 mousePos;
+    public Vector3 clickedPos { get; private set; }
 
     private void Awake()
     {
@@ -33,29 +35,35 @@ public class MouseWorld : MonoBehaviour
     }
     private void Start()
     {
-        mousePos = transform.position;
+        clickedPos = transform.position;
     }
     private void Update()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out RaycastHit npcHit, float.MaxValue, npc))
         {
             if (Input.GetMouseButton(0))
             {
-                if (npcHit.transform.TryGetComponent<NPC>(out NPC npc))
+                if (npcHit.transform.TryGetComponent<Unit>(out Unit unit))
                 {
-                    OnTargetNPCChanged?.Invoke(this, new OnTargetNPCChangedEventArgs(npc));
+                    OnTargetChanged?.Invoke(this, new OnTargetChangedEventArgs(unit));
+                    return;
                 }
             }
         }
 
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out RaycastHit groundHit, float.MaxValue, groundLayer))
         {
-            mousePos = groundHit.point;
+            if (Input.GetMouseButton(0))
+            {
+                clickedPos = groundHit.point;
+                OnTargetRemoved?.Invoke(this, EventArgs.Empty);
+                return;
+            }
         }
-    }
-
-    public Vector3 GetMousePos()
-    {
-        return mousePos;
     }
 }

@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using static MouseWorld;
 
 public class CharacterMovement : MonoBehaviour
 {
@@ -13,11 +14,10 @@ public class CharacterMovement : MonoBehaviour
     private CharacterInfo thisChar;
     private CharacterAnimations cAnimations;
 
-    private FindTilePath tilePath = new FindTilePath();
-
+    private Unit targetUnit;
     private GridPosition targetGridPosition;
-    private Vector3 targetPosition;
-    private int tileStoppingDistance;
+    private Vector3 clickedPos;
+    private int attackRange;
 
     private int currentIndex;
     private List<Vector3> path;
@@ -27,9 +27,12 @@ public class CharacterMovement : MonoBehaviour
     {
         targetGridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
         transform.position = LevelGrid.Instance.GetWorldPosition(targetGridPosition);
+        clickedPos = MouseWorld.Instance.clickedPos;
+
         LevelGrid.Instance.AddPlayerToGridObject(targetGridPosition);
 
-        MouseWorld.Instance.OnTargetNPCChanged += MoveToTargetNPC;
+        MouseWorld.Instance.OnTargetChanged += MoveToTarget;
+        MouseWorld.Instance.OnTargetRemoved += RemoveTarget;
 
         cAnimations = GetComponent<CharacterAnimations>();
         thisChar = GetComponent<CharacterInfo>();
@@ -39,36 +42,37 @@ public class CharacterMovement : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (clickedPos != MouseWorld.Instance.clickedPos)
         {
-            if (EventSystem.current.IsPointerOverGameObject())
+            clickedPos = MouseWorld.Instance.clickedPos;
+            GridPosition clickedGridPosition = LevelGrid.Instance.GetGridPosition(clickedPos);
+
+            if (LevelGrid.Instance.GetGridObject(clickedGridPosition) != null) //Still not working as intended.
             {
-                return;
-            }
+                thisChar.readyToAttack = false;
+                targetGridPosition = clickedGridPosition;
 
-            Vector3 clickedPosition = MouseWorld.Instance.GetMousePos();
-
-            if (LevelGrid.Instance.GetGridPosition(clickedPosition) != null) //Still not working as intended.
-            {
-                targetGridPosition = LevelGrid.Instance.GetGridPosition(clickedPosition);
-
-                var pathResult = tilePath.FindGroundTilePath(targetGridPosition, thisChar);
-                path = pathResult.pathList;
-                gridPositions = pathResult.gridPositions;
+                (path, gridPositions) = Pathfinding.Instance.FindGroundTilePath(targetGridPosition, thisChar);
 
                 currentIndex = 0;
-                tileStoppingDistance = 0;
+                attackRange = 0;
             }
             else return;
         }
 
-        // If a path exists, move to each location
-        if (path != null && currentIndex < path.Count - tileStoppingDistance)
+        if (targetUnit != null)
         {
-            targetPosition = path[currentIndex];
+            Vector3 direction = (targetUnit.transform.position - transform.position).normalized;
+            transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
+        }
+
+        // If a path exists, move to each location
+        if (path != null && currentIndex < path.Count - attackRange)
+        {
+            Vector3 targetPosition = path[currentIndex];
             Vector3 direction = (targetPosition - transform.position).normalized;
 
-            transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
+            if (targetUnit == null) transform.forward = Vector3.Lerp(transform.forward, direction, ROTATION_SPEED * Time.deltaTime);
 
             if (thisChar.GetIsRunning())
             {
@@ -98,6 +102,14 @@ public class CharacterMovement : MonoBehaviour
         {
             thisChar.SetMoveSpeed(0);
             cAnimations.SetMovementAnimation(thisChar.GetMoveSpeed());
+
+            if (thisChar.GetTargetUnit() != null)
+            {
+                if (Pathfinding.Instance.CheckIfNeighbour(GetPlayerGridPosition(), thisChar.GetTargetUnit().GetGridPosition()))
+                {
+                    thisChar.readyToAttack = true;
+                }
+            } else thisChar.readyToAttack = false;
         }
     }
 
@@ -111,14 +123,24 @@ public class CharacterMovement : MonoBehaviour
         return LevelGrid.Instance.GetGridObject(targetGridPosition);
     }
 
-    private void MoveToTargetNPC(object sender, OnTargetNPCChangedEventArgs npc)
+    private void MoveToTarget(object sender, MouseWorld.OnTargetChangedEventArgs unit)
     {
-        NPC targetNPC = npc.targetNPC;
-        tileStoppingDistance = 1;
+        targetUnit = unit.targetUnit;
 
-        path = tilePath.FindTargetTilePath(targetNPC, thisChar).pathList;
-        gridPositions = tilePath.FindTargetTilePath(targetNPC, thisChar).gridPositions;
+        if (Pathfinding.Instance.CheckIfNeighbour(GetPlayerGridPosition(), targetUnit.GetGridPosition()))
+        {
+            return;
+        }
 
+        attackRange = 1;
+        (path, gridPositions) = Pathfinding.Instance.FindTargetTilePath(targetUnit, thisChar);
         currentIndex = 0;
+    }
+
+    private void RemoveTarget(object sender, EventArgs e)
+    {
+        targetUnit = null;
+
+        attackRange = 0;
     }
 }

@@ -4,12 +4,20 @@ using UnityEngine;
 public class CharacterInfo : Unit
 {
     private HealthBar healthBar;
+    private CharacterAnimations cAnimations;
+    private CharacterAttack cAttack;
 
-    [SerializeField] private bool isRunning;
+    [SerializeField] bool isRunning;
+
+    // From movement script
+    public bool readyToAttack;
+    // From attack script
+    public bool isAttacking;
+
     private float moveSpeed;
     private int maxHealth = 250;
 
-    private NPC enemyTarget;
+    [SerializeField] private Unit targetUnit;
 
     public override void Awake()
     {
@@ -22,7 +30,20 @@ public class CharacterInfo : Unit
         SetHealth(maxHealth);
         healthBar = HealthBar.instance;
 
+        cAnimations = GetComponentInChildren<CharacterAnimations>();
+        cAttack = GetComponentInChildren<CharacterAttack>();
+
         CanvasButtonController.Instance.OnRunButtonClicked += ToggleRun;
+        MouseWorld.Instance.OnTargetChanged += ChangeTarget;
+        MouseWorld.Instance.OnTargetRemoved += RemoveTarget;
+    }
+
+    private void Update()
+    {
+        if (readyToAttack && !isAttacking)
+        {
+            cAttack.AttackTarget();
+        }
     }
 
     public void ToggleRun(object sender, EventArgs e)
@@ -45,14 +66,25 @@ public class CharacterInfo : Unit
         return moveSpeed;
     }
 
-    public NPC GetCurrentEnemy()
+    private void ChangeTarget(object sender, MouseWorld.OnTargetChangedEventArgs e)
     {
-        return enemyTarget;
+        targetUnit = e.targetUnit;
+    }
+    private void RemoveTarget(object sender, EventArgs e)
+    {
+        targetUnit = null;
+    }
+
+    public Unit GetTargetUnit()
+    {
+        return targetUnit;
     }
 
     public override void TakeDamage(int damage)
     {
         base.TakeDamage(damage);
+
+        cAnimations.TakeDamageAnimation();
 
         int currentHealth = GetHealth();
         healthBar.ChangeHealth(currentHealth, maxHealth);
