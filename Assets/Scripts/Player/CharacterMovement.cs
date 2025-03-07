@@ -22,6 +22,7 @@ public class CharacterMovement : MonoBehaviour
     private int currentIndex;
     private List<Vector3> path;
     private List<GridPosition> gridPositions;
+    private GridPosition finalPosition;
 
     private void Start()
     {
@@ -52,7 +53,8 @@ public class CharacterMovement : MonoBehaviour
                 thisChar.readyToAttack = false;
                 targetGridPosition = clickedGridPosition;
 
-                (path, gridPositions) = Pathfinding.Instance.FindGroundTilePath(targetGridPosition, thisChar);
+                (path, gridPositions, finalPosition) = Pathfinding.Instance.FindGroundTilePath(targetGridPosition, thisChar);
+                thisChar.finalGridPosition = finalPosition;
 
                 currentIndex = 0;
                 attackRange = 0;
@@ -133,7 +135,8 @@ public class CharacterMovement : MonoBehaviour
         }
 
         attackRange = 1;
-        (path, gridPositions) = Pathfinding.Instance.FindTargetTilePath(targetUnit, thisChar);
+        (path, gridPositions, finalPosition) = Pathfinding.Instance.FindTargetTilePath(targetUnit, thisChar);
+        thisChar.finalGridPosition = finalPosition;
         currentIndex = 0;
     }
 

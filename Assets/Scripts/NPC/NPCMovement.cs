@@ -17,6 +17,7 @@ public class NPCMovement : MonoBehaviour
     private int currentIndex;
 
     private GridPosition targetGridPosition;
+    private GridPosition finalPosition;
     public List<Vector3> path;
     public List<GridPosition> gridPositions;
 
@@ -90,7 +91,8 @@ public class NPCMovement : MonoBehaviour
             if (!Pathfinding.Instance.CheckIfNeighbour(target.GetGridPosition(), thisNPC.GetGridPosition()))
             {
                 readyToAttack = false;
-                (path, gridPositions) = Pathfinding.Instance.FindTargetTilePath(target, thisNPC);
+                (path, gridPositions, finalPosition) = Pathfinding.Instance.FindTargetTilePath(target, thisNPC);
+                thisNPC.finalGridPosition = finalPosition;
                 currentIndex = 0;
                 return;
             }

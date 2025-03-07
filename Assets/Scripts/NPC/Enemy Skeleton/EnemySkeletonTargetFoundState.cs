@@ -5,7 +5,7 @@ public class EnemySkeletonTargetFoundState : EnemySkeletonBaseState
     {
         movement = eSkeleton.thisUnit.GetComponent<NPCMovement>();
         movement.target = eSkeleton.target;
-        (movement.path, movement.gridPositions) = Pathfinding.Instance.FindTargetTilePath(eSkeleton.target, eSkeleton.thisUnit);
+        (movement.path, movement.gridPositions, _) = Pathfinding.Instance.FindTargetTilePath(eSkeleton.target, eSkeleton.thisUnit);
     }
 
     public override void UpdateState(EnemySkeletonStateManager eSkeleton)

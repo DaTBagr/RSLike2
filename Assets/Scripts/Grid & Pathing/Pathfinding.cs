@@ -247,23 +247,27 @@ public class Pathfinding : MonoBehaviour
         return false;
     }
 
-    public (List<Vector3> pathList, List<GridPosition> gridPositions) FindGroundTilePath(GridPosition targetPosition, Unit thisChar)
+    public (List<Vector3> pathList, List<GridPosition> gridPositions, GridPosition finalPosition) FindGroundTilePath(GridPosition targetPosition, Unit thisChar)
     {
         List<GridPosition> gridPositions = FindPath(thisChar.GetGridPosition(), targetPosition, out int pathLength);
         List<Vector3> pathList = new List<Vector3>();
+        GridPosition finalPosition;
 
         foreach (GridPosition gridPosition in gridPositions)
         {
             pathList.Add(LevelGrid.Instance.GetWorldPosition(gridPosition));
         }
 
-        return (pathList, gridPositions);
+        finalPosition = gridPositions[gridPositions.Count - 1];
+
+        return (pathList, gridPositions, finalPosition);
     }
 
-    public (List<Vector3> pathList, List<GridPosition> gridPositions) FindTargetTilePath(Unit target, Unit thisChar)
+    public (List<Vector3> pathList, List<GridPosition> gridPositions, GridPosition finalPosition) FindTargetTilePath(Unit target, Unit thisChar)
     {
-        List<GridPosition> gridPositions = FindPath(thisChar.GetGridPosition(), target.GetGridPosition(), out int pathLength);
+        List<GridPosition> gridPositions = FindPath(thisChar.GetGridPosition(), target.finalGridPosition, out int pathLength);
         List<Vector3> pathList = new List<Vector3>();
+        GridPosition finalPosition;
 
         foreach (GridPosition gridPosition in gridPositions)
         {
@@ -285,7 +289,9 @@ public class Pathfinding : MonoBehaviour
             gridPositions.Insert(gridPositions.Count - 1, (LevelGrid.Instance.GetGridPosition(pathList[pathList.Count - 1])));
         }
 
-        return (pathList, gridPositions);
+        finalPosition = gridPositions[gridPositions.Count - 1];
+
+        return (pathList, gridPositions, finalPosition);
     }
 
     public void SetIsWalkableGridPosition(GridPosition gridPosition, bool isWalkable)
