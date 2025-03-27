@@ -1,29 +1,31 @@
 using UnityEngine;
 
+[RequireComponent(typeof(GearSlot))]
 public class WeaponModelSlot : MonoBehaviour
 {
     public GameObject currentWeapon;
+    public GearSlot slot;
+
+    [SerializeField] PlayerManager playerManager;
 
     public void UnloadWeapon()
     {
         if (currentWeapon != null)
         {
+            playerManager.animations.Set2HSword(false);
             Destroy(currentWeapon);
         }
     }
 
-    public void LoadWeapon(GameObject weapon)
+    public void LoadWeapon(WeaponItem weapon)
     {
-        if (currentWeapon != null)
+        UnloadWeapon();
+
+        currentWeapon = Instantiate(weapon.gameObject, this.transform);
+
+        if (weapon.isTwoHand == true)
         {
-            UnloadWeapon();
-        }
-
-        currentWeapon = weapon;
-
-        weapon.transform.parent = transform;
-        weapon.transform.localRotation = Quaternion.identity;
-        weapon.transform.localPosition = Vector3.zero;
-        weapon.transform.localScale = Vector3.one;
+            playerManager.animations.Set2HSword(true);
+        } else playerManager.animations.Set2HSword(false);
     }
 }

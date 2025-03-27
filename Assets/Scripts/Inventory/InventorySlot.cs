@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -10,18 +11,21 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler
     private PlayerEquipment equipment;
     private PlayerInventory inventory;
 
-    private void Start()
+    private void Awake()
     {
         invSlotImage = GetComponent<Image>();
-        invSlotImage.enabled = false;
+        IsImageDisplayed(false);
+    }
 
-        equipment = GetComponentInParent<PlayerEquipment>();
-        inventory = GetComponentInParent<PlayerInventory>();
+    private void Start()
+    {
+        equipment = MenuManager.instance.equipment.GetComponent<PlayerEquipment>();
+        inventory = MenuManager.instance.inventory.GetComponent<PlayerInventory>();
     }
 
     public void DisplayItem(Item item)
     {
-        invSlotImage.enabled = true;
+        IsImageDisplayed(true);
         invSlotImage.sprite = item.GetComponent<Item>().sprite;
 
         currentItem = item;
@@ -29,22 +33,45 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler
 
     public void RemoveItem()
     {
-        invSlotImage.enabled = false;
-        currentItem = null;
-
+        IsImageDisplayed(false);
         inventory.RemoveItemFromSlot(this);
+
+        currentItem = null;
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
         if (currentItem is GearItem) 
         {
-            if (equipment.CheckIfNotEquipped((GearItem)currentItem) && inventory.CheckIfSpaceInInventory())
+            if (!equipment.CheckIfSlotAlreadyEquipped((GearItem)currentItem))
+            {
+                equipment.EquipGearItem((GearItem)currentItem);
+
+                RemoveItem();
+                return;
+            }
+
+            if (equipment.CheckIfSlotAlreadyEquipped((GearItem)currentItem) && inventory.CheckIfSpaceInInventory())
             {
                 equipment.EquipGearItem((GearItem)currentItem);
 
                 RemoveItem();
             }
         }
+    }
+
+    public void IsImageDisplayed(bool yes)
+    {
+        var tempColour = invSlotImage.color;        
+
+        if (yes)
+        {
+            tempColour.a = 1f;
+        } else
+        {
+            tempColour.a = 0f;
+        }
+
+        invSlotImage.color = tempColour;
     }
 }

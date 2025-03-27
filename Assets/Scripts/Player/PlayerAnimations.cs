@@ -31,4 +31,9 @@ public class PlayerAnimations : MonoBehaviour
     {
         StartCoroutine(TakeDamage());
     }
+
+    public void Set2HSword(bool set)
+    {
+        animator.SetBool("has2HSword", set);
+    }
 }

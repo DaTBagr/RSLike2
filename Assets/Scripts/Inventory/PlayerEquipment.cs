@@ -7,6 +7,9 @@ public class PlayerEquipment : MonoBehaviour
 {
     [SerializeField] PlayerStats cStats;
 
+    [SerializeField] WeaponModelSlot rightWeaponSlot;
+    [SerializeField] WeaponModelSlot leftWeaponSlot;
+
     private EquipmentSlot[] equipmentSlots = new EquipmentSlot[8];
 
     private void Start()
@@ -22,18 +25,23 @@ public class PlayerEquipment : MonoBehaviour
         {
             if (equipmentSlots[i].slot == itemSlot)
             {                
-                RemoveEquippedStats(equipmentSlots[i].currentGearItem);
+                if (equipmentSlots[i].currentGearItem != null)
+                {
+                    RemoveEquippedStats(equipmentSlots[i].currentGearItem);
+                }
+
                 equipmentSlots[i].currentGearItem = item;
                 AddEquippedStats(item);
 
                 equipmentSlots[i].DisplayItem(item);
+                InstantiateItemModel((WeaponItem)item);
             }
         }
     }
 
     public void UnequipGearItem(EquipmentSlot slot)
     {
-        GearSlot itemSlot = slot.currentGearItem.gearSlot;
+        GearSlot itemSlot = slot.slot;
 
         for (int i = 0; i < equipmentSlots.Length; i++)
         {
@@ -42,8 +50,33 @@ public class PlayerEquipment : MonoBehaviour
                 RemoveEquippedStats(equipmentSlots[i].currentGearItem);
                 equipmentSlots[i].currentGearItem = null;
 
-                equipmentSlots[i].RemoveItem();
+                UnInstantiateItemModel(itemSlot);
             }
+        }
+    }
+
+    // Only works for weapon items at the moment.
+    private void InstantiateItemModel(GearItem item)
+    {
+        if (item.gearSlot == GearSlot.LeftWeapon)
+        {
+            leftWeaponSlot.LoadWeapon((WeaponItem)item);
+        }
+        else if (item.gearSlot == GearSlot.RightWeapon)
+        {
+            rightWeaponSlot.LoadWeapon((WeaponItem)item);
+        }
+    }
+
+    private void UnInstantiateItemModel(GearSlot weaponSlot)
+    {
+        if (weaponSlot == GearSlot.LeftWeapon)
+        {
+            leftWeaponSlot.UnloadWeapon();
+        }
+        else if (weaponSlot == GearSlot.RightWeapon)
+        {
+            rightWeaponSlot.UnloadWeapon();
         }
     }
 
@@ -89,19 +122,20 @@ public class PlayerEquipment : MonoBehaviour
         cStats.prayerBonus -= item.itemStats.prayerBonus;
     }
 
-    public bool CheckIfNotEquipped(GearItem item)
+    public bool CheckIfSlotAlreadyEquipped(GearItem item)
     {
         GearSlot gearSlot = item.gearSlot;
 
         foreach(EquipmentSlot slot in equipmentSlots)
         {
-            if (slot.currentGearItem != null)
+            if (slot.slot == gearSlot)
             {
-                return false;
+                if (slot.currentGearItem != null)
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 }
 

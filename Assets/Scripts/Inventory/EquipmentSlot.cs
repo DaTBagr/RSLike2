@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -12,18 +13,22 @@ public class EquipmentSlot : MonoBehaviour, IPointerClickHandler
     private PlayerEquipment equipment;
     private PlayerInventory inventory;
 
-    private void Start()
+    private void Awake()
     {
         equipSlotImage = GetComponent<Image>();
-        equipSlotImage.enabled = false;
 
-        equipment = GetComponentInParent<PlayerEquipment>();
-        inventory = GetComponentInParent<PlayerInventory>();
+        IsImageDisplayed(false);
+    }
+
+    private void Start()
+    {
+        equipment = MenuManager.instance.equipment.GetComponent<PlayerEquipment>();
+        inventory = MenuManager.instance.inventory.GetComponent<PlayerInventory>();
     }
 
     public void DisplayItem(GearItem item)
     {
-        equipSlotImage.enabled = true;
+        IsImageDisplayed(true);
         equipSlotImage.sprite = item.GetComponent<Item>().sprite;
 
         currentGearItem = item;
@@ -31,17 +36,33 @@ public class EquipmentSlot : MonoBehaviour, IPointerClickHandler
 
     public void RemoveItem()
     {
-        if (inventory.CheckIfSpaceInInventory())
-        {
-            equipSlotImage.enabled = false;
-            equipment.UnequipGearItem(this);
+        IsImageDisplayed(false);
+        inventory.AddItem(currentGearItem);
 
-            currentGearItem = null;
-        }
+        equipment.UnequipGearItem(this);
     }
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        RemoveItem();
+        if (inventory.CheckIfSpaceInInventory())
+        {
+            RemoveItem();
+        }
+    }
+
+    public void IsImageDisplayed(bool yes)
+    {
+        var tempColour = equipSlotImage.color;
+
+        if (yes)
+        {
+            tempColour.a = 1f;
+        }
+        else
+        {
+            tempColour.a = 0f;
+        }
+
+        equipSlotImage.color = tempColour;
     }
 }
