@@ -241,7 +241,13 @@ public class Pathfinding : MonoBehaviour
 
         foreach (PathNode node in neighbourNodes)
         {
-            if (node == GetNode(targetGridPosition)) return true;
+            if (node == GetNode(targetGridPosition)) 
+            { 
+                if (gridPosition.x == targetGridPosition.x || gridPosition.z == targetGridPosition.z)
+                {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -274,7 +280,15 @@ public class Pathfinding : MonoBehaviour
             pathList.Add(LevelGrid.Instance.GetWorldPosition(gridPosition));
         }
 
-        GridPosition lastGridPos = LevelGrid.Instance.GetGridPosition(pathList[pathList.Count - 2]);
+        GridPosition lastGridPos;
+
+        if (pathList.Count > 1)
+        {
+            lastGridPos = LevelGrid.Instance.GetGridPosition(pathList[pathList.Count - 2]);
+        } else
+        {
+            lastGridPos = LevelGrid.Instance.GetGridPosition(pathList[pathList.Count - 1]);
+        }
 
         // Moves one tile away from target, but not diagonally.
         if (lastGridPos.x != target.GetGridPosition().x && lastGridPos.z != target.GetGridPosition().z)

@@ -30,10 +30,10 @@ public class PlayerInfo : Unit
         SetHealth(maxHealth);
         healthBar = HealthBar.instance;
 
-        pAttack = GetComponentInChildren<PlayerAttack>();
-        pAttack = GetComponentInChildren<PlayerAttack>();
+        pAttack = GetComponent<PlayerAttack>();
+        pAttack = GetComponent<PlayerAttack>();
+        pAnimations = GetComponent<PlayerAnimations>();
 
-        CanvasButtonController.Instance.OnRunButtonClicked += ToggleRun;
         MouseWorld.Instance.OnTargetChanged += ChangeTarget;
         MouseWorld.Instance.OnTargetRemoved += RemoveTarget;
     }
@@ -46,7 +46,7 @@ public class PlayerInfo : Unit
         }
     }
 
-    public void ToggleRun(object sender, EventArgs e)
+    public void ToggleRun()
     {
         isRunning = !isRunning;
     }
@@ -85,8 +85,6 @@ public class PlayerInfo : Unit
         base.TakeDamage(damage);
 
         pAnimations.TakeDamageAnimation();
-
-        int currentHealth = GetHealth();
-        healthBar.ChangeHealth(currentHealth, maxHealth);
+        healthBar.ChangeHealth(GetHealth(), maxHealth);
     }
 }
